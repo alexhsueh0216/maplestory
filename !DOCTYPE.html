@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>強化機率與期望成本計算器</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 2em auto; }
+    label { display: block; margin-top: 1em; }
+    input[type="number"] { width: 100%; padding: .5em; }
+    button { margin-top: 1em; padding: .5em 1em; }
+    .result { margin-top: 2em; padding: 1em; background: #f5f5f5; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>強化計算器</h1>
+  <label>
+    裝備成本（楓幣）：
+    <input id="costEquip" type="number" value="0">
+  </label>
+  <label>
+    卷軸成本（楓幣／張）：
+    <input id="costScroll" type="number" value="1500000">
+  </label>
+  <label>
+    卷軸成功機率（0~1）：
+    <input id="pSuccess" type="number" step="0.01" value="0.6">
+  </label>
+  <label>
+    最大強化次數：
+    <input id="maxTrials" type="number" value="5">
+  </label>
+  <label>
+    期望成功次數：
+    <input id="targetSuccess" type="number" value="4">
+  </label>
+  <button onclick="compute()">計算</button>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    function factorial(n) {
+      return n <= 1 ? 1 : n * factorial(n - 1);
+    }
+    function comb(n, k) {
+      return factorial(n) / (factorial(k) * factorial(n - k));
+    }
+    function compute() {
+      const C = parseFloat(document.getElementById('costEquip').value);
+      const S = parseFloat(document.getElementById('costScroll').value);
+      const p = parseFloat(document.getElementById('pSuccess').value);
+      const q = 1 - p;
+      const n = parseInt(document.getElementById('maxTrials').value);
+      const k = parseInt(document.getElementById('targetSuccess').value);
+
+      let probExact = 0, probAtLeast = 0;
+      for (let i = 0; i <= n; i++) {
+        const p_i = comb(n, i) * Math.pow(p, i) * Math.pow(q, n - i);
+        if (i === k) probExact = p_i;
+        if (i >= k) probAtLeast += p_i;
+      }
+
+      // 幾何分佈期望嘗試次數
+      const expectedRuns = 1 / probAtLeast;
+      const expectedCost = (C + n * S) * expectedRuns;
+
+      document.getElementById('result').innerHTML = `
+        <p>「恰好成功 ${k} 次」機率：<strong>${(probExact*100).toFixed(2)}%</strong></p>
+        <p>「成功次數 ≥ ${k}」累積機率：<strong>${(probAtLeast*100).toFixed(2)}%</strong></p>
+        <p>平均需要嘗試次數（組）：<strong>${expectedRuns.toFixed(2)}</strong></p>
+        <p>期望總成本：<strong>${Math.round(expectedCost).toLocaleString()} 楓幣</strong></p>
+      `;
+    }
+  </script>
+</body>
+</html>
